@@ -19,26 +19,19 @@ bool VotincevDAlternatingValuesSEQ::ValidationImpl() {
 }
 
 bool VotincevDAlternatingValuesSEQ::PreProcessingImpl() {
-  vect_data = GetInput();
+  vect_data_ = GetInput();
   return true;
 }
 
 bool VotincevDAlternatingValuesSEQ::RunImpl() {
-  // auto start_time = std::chrono::high_resolution_clock::now();
-
   int all_swaps = 0;
-  for (size_t j = 1; j < vect_data.size(); j++) {
-    if ((vect_data[j - 1] < 0 && vect_data[j] >= 0) || (vect_data[j - 1] >= 0 && vect_data[j] < 0)) {
+  for (size_t j = 1; j < vect_data_.size(); j++) {
+    if ((vect_data_[j - 1] < 0 && vect_data_[j] >= 0) || (vect_data_[j - 1] >= 0 && vect_data_[j] < 0)) {
       all_swaps++;
     }
   }
 
-  // auto end_time = std::chrono::high_resolution_clock::now();
-  // auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time);
-  // std::cout << "SEQ_was_working:" << duration.count() / 1000000.0 << " seconds" << std::endl;
-
   GetOutput() = all_swaps;
-  // std::cout<< "Seq result: " << GetOutput() << "\n";
   return true;
 }
 

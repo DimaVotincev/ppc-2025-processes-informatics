@@ -1,5 +1,7 @@
 #include <gtest/gtest.h>
 
+#include <vector>
+
 #include "util/include/perf_test_util.hpp"
 #include "votincev_d_alternating_values/common/include/common.hpp"
 #include "votincev_d_alternating_values/mpi/include/ops_mpi.hpp"
@@ -14,24 +16,17 @@ class VotincevDAlternatigValuesRunPerfTestsProcesses : public ppc::util::BaseRun
 
   void SetUp() override {
     int vect_size = kCount_;
-    std::vector<double> vect_data;
+    std::vector<double> vect_data_;
     int swapper = 1;
     for (int i = 0; i < vect_size; i++) {
-      vect_data.push_back(i * swapper);  // 0 -1 2 -3 4 -5...
+      vect_data_.push_back(i * swapper);  // 0 -1 2 -3 4 -5...
       swapper *= -1;
     }
 
-    input_data_ = vect_data;
+    input_data_ = vect_data_;
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    // // для процессов 1,2, .. N-1
-    // if(output_data == -1) {
-    //   return true;
-    // }
-    // std::cout << (output_data == kCount_) << '\n';
-    // 0й процесс должен вернуть верный результат
-    // std::cout << "Inside CheckTestOutputData" <<output_data == kCount_ << "\n";
     return output_data == expected_res;
   }
 

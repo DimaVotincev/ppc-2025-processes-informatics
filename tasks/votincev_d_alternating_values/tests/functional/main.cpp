@@ -30,22 +30,16 @@ class VotincevDAlternatigValuesRunFuncTestsProcesses : public ppc::util::BaseRun
   // считываем/генерируем данные
   void SetUp() override {
     int vect_size = expected_res + 1;  // чтобы чередований было ровно expected_res
-    std::vector<double> vect_data;
+    std::vector<double> vect_data_;
     int swapper = 1;
     for (int i = 0; i < vect_size; i++) {
-      vect_data.push_back(i * swapper);  // 0 -1 2 -3 4 ...
+      vect_data_.push_back(i * swapper);  // 0 -1 2 -3 4 ...
       swapper *= -1;
     }
-    input_data_ = vect_data;
+    input_data_ = vect_data_;
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    // спец значения для всех процессов 1,2 ... N-1
-    // if (output_data == -1) {
-    //   return true;
-    // }
-
-    // 0й процесс должен вернуть правильный результат
     return output_data == expected_res;
   }
 
