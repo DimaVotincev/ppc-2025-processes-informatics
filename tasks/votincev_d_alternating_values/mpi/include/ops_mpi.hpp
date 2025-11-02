@@ -13,7 +13,7 @@ class VotincevDAlternatingValuesMPI : public BaseTask {
   explicit VotincevDAlternatingValuesMPI(const InType &in);
 
  private:
-  std::vector<double> v;
+  std::vector<double> vect_data;
 
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;

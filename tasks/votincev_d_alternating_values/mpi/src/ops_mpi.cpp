@@ -24,7 +24,7 @@ bool VotincevDAlternatingValuesMPI::ValidationImpl() {
 
 // препроцессинг (например в КГ)
 bool VotincevDAlternatingValuesMPI::PreProcessingImpl() {
-  v = GetInput();
+  vect_data = GetInput();
   GetOutput() = -1;  // специальное значение
   return true;
 }
@@ -34,67 +34,67 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
   // double start_time = 0, end_time = 0;
   // start_time = MPI_Wtime();
 
-  int allSwaps = 0;
+  int all_swaps = 0;
   // получаю кол-во процессов
-  int ProcessN;
-  MPI_Comm_size(MPI_COMM_WORLD, &ProcessN);
+  int process_n;
+  MPI_Comm_size(MPI_COMM_WORLD, &process_n);
 
   // получаю ранг процесса
-  int ProcRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
+  int proc_rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);
 
   // если процессов больше, чем элементов
-  if (static_cast<int>(v.size()) < ProcessN) {
-    ProcessN = static_cast<int>(v.size());
+  if (static_cast<int>(vect_data.size()) < process_n) {
+    process_n = static_cast<int>(vect_data.size());
   }
 
-  int partSize;
-  if (ProcRank == 0) {
-    int base = v.size() / ProcessN;    // минимум на обработку
-    int remain = v.size() % ProcessN;  // остаток (распределим)
+  int part_size;
+  if (proc_rank == 0) {
+    int base = vect_data.size() / process_n;    // минимум на обработку
+    int remain = vect_data.size() % process_n;  // остаток (распределим)
 
-    int startId = 0;
-    for (int i = 1; i < ProcessN; i++) {
-      partSize = base;
+    int start_id = 0;
+    for (int i = 1; i < process_n; i++) {
+      part_size = base;
       if (remain) {  // если есть остаток - то распределяем между первыми
-        partSize++;
+        part_size++;
         remain--;
       }
 
-      partSize++;  // цепляем правого соседа, 0-й будет последним - поэтому он будет последний кусок считать
+      part_size++;  // цепляем правого соседа, 0-й будет последним - поэтому он будет последний кусок считать
 
       // Вместо пересылки данных - пересылаем индексы начала и конца
-      int indices[2] = {startId, startId + partSize};
+      int indices[2] = {start_id, start_id + part_size};
       MPI_Send(&indices[0], 2, MPI_INT, i, 0, MPI_COMM_WORLD);
 
-      startId += partSize - 1;
+      start_id += part_size - 1;
 
       // вычисляю для последнего
-      if (i == (ProcessN - 1)) {
-        partSize = base + remain;
+      if (i == (process_n - 1)) {
+        part_size = base + remain;
       }
     }
 
     // 0й процесс считает свою часть
-    for (size_t j = startId + 1; j < v.size(); j++) {
-      if ((v[j - 1] < 0 && v[j] >= 0) || (v[j - 1] >= 0 && v[j] < 0)) {
-        allSwaps++;
+    for (size_t j = start_id + 1; j < vect_data.size(); j++) {
+      if ((vect_data[j - 1] < 0 && vect_data[j] >= 0) || (vect_data[j - 1] >= 0 && vect_data[j] < 0)) {
+        all_swaps++;
       }
     }
 
     // получаю посчитанные swap от процессов
-    for (int i = 1; i < ProcessN; i++) {
+    for (int i = 1; i < process_n; i++) {
       int tmp;
       // что , сколько, тип, кому, тег, коммуникатор
       MPI_Recv(&tmp, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      allSwaps += tmp;
+      all_swaps += tmp;
     }
 
     // на этом этапе 0-й процесс сделал всю работу
   }
 
-  for (int i = 1; i < ProcessN; i++) {
-    if (ProcRank == i) {
+  for (int i = 1; i < process_n; i++) {
+    if (proc_rank == i) {
       // получаем индексы вместо данных
       int indices[2];
       MPI_Recv(indices, 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
@@ -102,46 +102,46 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
       int start_index = indices[0];
       int end_index = indices[1];
 
-      int swapCount = 0;
+      int swap_count = 0;
       // обрабатываем свой диапазон из глобального вектора v
       for (int j = start_index + 1; j < end_index; j++) {
-        if ((v[j - 1] < 0 && v[j] >= 0) || (v[j - 1] >= 0 && v[j] < 0)) {
-          swapCount++;
+        if ((vect_data[j - 1] < 0 && vect_data[j] >= 0) || (vect_data[j - 1] >= 0 && vect_data[j] < 0)) {
+          swap_count++;
         }
       }
 
-      MPI_Send(&swapCount, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
+      MPI_Send(&swap_count, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
     }
   }
 
   // только 0й процесс владеет правильным результатом, остальные - его формируют
   // если остальным посылать - будет проблема, на 20 процессах уже не работает
-  if (ProcRank == 0) {
-    GetOutput() = allSwaps;
+  if (proc_rank == 0) {
+    GetOutput() = all_swaps;
   }
 
   MPI_Barrier(MPI_COMM_WORLD);
   // end_time = MPI_Wtime();
-  // if (ProcRank == 0) {
+  // if (proc_rank == 0) {
   //   std::cout << "MPI_was_working:" << (end_time - start_time) << "\n";
   // }
 
-  MPI_Bcast(&allSwaps, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  GetOutput() = allSwaps;
+  MPI_Bcast(&all_swaps, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  GetOutput() = all_swaps;
   MPI_Barrier(MPI_COMM_WORLD);
 
   // ========== пересылка, но не через Bcast
   //
-  // if (ProcRank == 0) {
+  // if (proc_rank == 0) {
   //   // отправляем всем процессам корректный результат
-  //   for (int i = 1; i < ProcessN; i++) {
-  //     MPI_Send(&allSwaps, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+  //   for (int i = 1; i < process_n; i++) {
+  //     MPI_Send(&all_swaps, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
   //   }
   //   // сами устанавливаем значение
-  //   GetOutput() = allSwaps;
+  //   GetOutput() = all_swaps;
   // }
-  // for (int i = 1; i < ProcessN; i++) {
-  //   if (ProcRank == i) {
+  // for (int i = 1; i < process_n; i++) {
+  //   if (proc_rank == i) {
   //     int allSw;
   //     MPI_Recv(&allSw, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   //     GetOutput() = allSw;
