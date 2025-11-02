@@ -8,7 +8,7 @@
 namespace votincev_d_alternating_values {
 
 using InType = std::vector<double>;
-using OutType = int;           // size_t ?
+using OutType = int;           // убрать комментарии везде
 using TestType = std::string;  // ну уж точно не std::vector<double>
 using BaseTask = ppc::task::Task<InType, OutType>;
 
