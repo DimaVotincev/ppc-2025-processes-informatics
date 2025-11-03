@@ -69,15 +69,11 @@ remain = M % N
 | 100               | 0.000000       | 0.0013         | 0.00×     |
 | 10 000            | 0.000006       | 0.0018         | 0.003×    |
 | 1 000 000         | 0.0039         | 0.0059         | 0.66×     |
-| 10 000 000        | 0.025568       | 0,0062703      | 4,077×    |
+| 10 000 000        | 0.821          | 0.457          | 1,862×    |
 
-Само ускорение в 4,077 раз - выглядит достаточно неправдоподобно, нереалистично.
-Ведь для 4-х процессов максимальное теоретическое ускорение это 4x.
-Всё может быть связано с кешированием, возможно, компилятор векторизует параллельную версию, а версию SEQ не может (потому что нетривиально ходим по ветору, компилятор такое не любит). Возможно, SEQ версия не попадала в кеш (сначала работала MPI программа, потом запустился SEQ и пошли кеш промахи). Но Perf тесты показали такое ускорение. 
-Алгоритм достаточно простой и хорошо распараллеливается - это основная причина ускорения.
-Можно сделать выводы из экспериментов:
--При больших данных MPI версия дает существенное ускорение и показывает преимущество над SEQ.
--При небольших данных SEQ версия работает быстрее (за счет MPI операций, которые замедляют работу MPI версии, что существенно при маленьких размерах вектора)
+При замерах (Perf тестах) была получена данная таблица.
+Можно заметить, что на 4 процессах ускорение не 4, как хотелось бы,а всего 1,862x.
+С увеличением размера данных будет повышаться эффективность MPI версии, но идеальное ускорение 4x недостижимо. Для достижения ускорения 4х процессы должны посылать Recv, Send так, чтобы время ожидания было минимальным, сама посылка данных должна происходить мгновенно и т.д. - но это невозможно.
 
  
 ## Заключение
@@ -92,231 +88,28 @@ remain = M % N
 
 ## Приложения (код параллельной реализации)
 
-# Код оптимальной реализации (передача индексов + размера)
 ```
 bool VotincevDAlternatingValuesMPI::RunImpl() {
-  // double start_time = 0, end_time = 0;
-  // start_time = MPI_Wtime();
+  int all_swaps = 0;
 
-  int allSwaps = 0;
-  // получаю кол-во процессов
-  int ProcessN;
-  MPI_Comm_size(MPI_COMM_WORLD, &ProcessN);
+  int process_n = 0;
+  MPI_Comm_size(MPI_COMM_WORLD, &process_n);  // получаю кол-во процессов
 
-  // получаю ранг процесса
-  int ProcRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
+  int proc_rank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &proc_rank);  // получаю ранк процесса
 
-  // если процессов больше, чем элементов
-  if (static_cast<int>(v.size()) < ProcessN) {
-    ProcessN = static_cast<int>(v.size());
+  // если процессов больше, чем размер вектора
+  const int vector_size = static_cast<int>(vect_data_.size());
+  process_n = std::min(vector_size, process_n);
+
+  if (proc_rank == 0) {
+    all_swaps = ProcessMaster(process_n);  // главный процесс (распределяет + считает часть)
+  } else {
+    ProcessWorker();  // процессы-рабочие (только считают)
   }
 
-  int partSize;
-  if (ProcRank == 0) {
-    int base = v.size() / ProcessN;    // минимум на обработку
-    int remain = v.size() % ProcessN;  // остаток (распределим)
-
-    int startId = 0;
-    for (int i = 1; i < ProcessN; i++) {
-      partSize = base;
-      if (remain) {  // если есть остаток - то распределяем между первыми
-        partSize++;
-        remain--;
-      }
-
-      partSize++;  // цепляем правого соседа, 0-й будет последним - поэтому он будет последний кусок считать
-
-      // Вместо пересылки данных - пересылаем индексы начала и конца
-      int indices[2] = {startId, startId + partSize};
-      MPI_Send(&indices[0], 2, MPI_INT, i, 0, MPI_COMM_WORLD);
-
-      startId += partSize - 1;
-
-      // вычисляю для последнего
-      if (i == (ProcessN - 1)) {
-        partSize = base + remain;
-      }
-    }
-
-    // 0й процесс считает свою часть
-    for (size_t j = startId + 1; j < v.size(); j++) {
-      if ((v[j - 1] < 0 && v[j] >= 0) || (v[j - 1] >= 0 && v[j] < 0)) {
-        allSwaps++;
-      }
-    }
-
-    // получаю посчитанные swap от процессов
-    for (int i = 1; i < ProcessN; i++) {
-      int tmp;
-      // что , сколько, тип, кому, тег, коммуникатор
-      MPI_Recv(&tmp, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      allSwaps += tmp;
-    }
-
-    // на этом этапе 0-й процесс сделал всю работу
-  }
-
-  for (int i = 1; i < ProcessN; i++) {
-    if (ProcRank == i) {
-      // получаем индексы вместо данных
-      int indices[2];
-      MPI_Recv(indices, 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      int start_index = indices[0];
-      int end_index = indices[1];
-
-      int swapCount = 0;
-      // обрабатываем свой диапазон из глобального вектора v
-      for (int j = start_index + 1; j < end_index; j++) {
-        if ((v[j - 1] < 0 && v[j] >= 0) || (v[j - 1] >= 0 && v[j] < 0)) {
-          swapCount++;
-        }
-      }
-
-      MPI_Send(&swapCount, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    }
-  }
-
-  // только 0й процесс владеет правильным результатом, остальные - его формируют
-  // если остальным посылать - будет проблема, на 20 процессах уже не работает
-  if (ProcRank == 0) {
-    GetOutput() = allSwaps;
-  }
-
-  
-  MPI_Barrier(MPI_COMM_WORLD);
-  // end_time = MPI_Wtime();
-
-  // if (ProcRank == 0) {
-  //   std::cout << "MPI_was_working:" << (end_time - start_time) << "\n";
-  // }
-
-  MPI_Bcast(&allSwaps, 1, MPI_INT, 0, MPI_COMM_WORLD);
-  GetOutput() = allSwaps;
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  // ========== пересылка, но не через Bcast
-  //
-  // if (ProcRank == 0) {
-  //   // отправляем всем процессам корректный результат
-  //   for (int i = 1; i < ProcessN; i++) {
-  //     MPI_Send(&allSwaps, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-  //   }
-  //   // сами устанавливаем значение
-  //   GetOutput() = allSwaps;
-  // }
-  // for (int i = 1; i < ProcessN; i++) {
-  //   if (ProcRank == i) {
-  //     int allSw;
-  //     MPI_Recv(&allSw, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-  //     GetOutput() = allSw;
-  //   }
-  // }
-  //
-  // ========== пересылка, но не через Bcast
-
+  SyncResults(all_swaps);  // посылаю результат всем процессам
   return true;
 }
+
 ```
-
-# Код неоптимальной реализации (с передачей кусков векторов)
-```
-bool VotincevDAlternatingValuesMPI::RunImpl() {
-  int allSwaps = 0;
-  // получаю кол-во процессов
-  int ProcessN;
-  MPI_Comm_size(MPI_COMM_WORLD, &ProcessN);
-
-  // получаю ранг процесса
-  int ProcRank;
-  MPI_Comm_rank(MPI_COMM_WORLD, &ProcRank);
-
-  int partSize;
-  if (ProcRank == 0) {
-    int base = v.size() / ProcessN;    // минимум на обработку
-    int remain = v.size() % ProcessN;  // остаток (распределим)
-
-    int startId = 0;
-    for (int i = 1; i < ProcessN; i++) {
-      partSize = base;
-      if (remain) {  // если есть остаток - то распределяем между первыми
-        partSize++;
-        remain--;
-      }
-
-      partSize++;  // цепляем правого соседа, 0-й будет последним - поэтому он будет последний кусок считать
-
-      // отправляем всем процессам их размер
-      MPI_Send(&partSize, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-      // std::cout << "Id: " << startId << '\n';
-
-      // отправлем всем прцоессам их кусок вектора
-      MPI_Send(v.data() + startId, partSize, MPI_DOUBLE, i, 0, MPI_COMM_WORLD);
-      startId += partSize - 1;
-
-      // вычисляю для последнего
-      if (i == ProcessN - 1) {
-        partSize = base + remain;
-      }
-    }
-
-    for (size_t j = startId + 1; j < v.size(); j++) {
-      if ((v[j - 1] < 0 && v[j] >= 0) || (v[j - 1] >= 0 && v[j] < 0)) {
-        allSwaps++;
-      }
-    }
-
-    // получаю посчитанные swap от процессов
-    for (int i = 1; i < ProcessN; i++) {
-      int tmp;
-      // что , сколько, тип, кому, тег, коммуникатор
-      MPI_Recv(&tmp, 1, MPI_INT, i, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      allSwaps += tmp;
-    }
-
-    // на этом этапе 0-й процесс сделал всю работу
-  }
-
-  for (int i = 1; i < ProcessN; i++) {
-    if (ProcRank == i) {
-      std::vector<double> vectData;
-      // отправляю partSize процессам кроме последнего
-      MPI_Recv(&partSize, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      vectData.resize(partSize);
-      MPI_Recv(vectData.data(), partSize, MPI_DOUBLE, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-
-      int swapCount = 0;
-      for (size_t j = 1; j < vectData.size(); j++) {
-        if ((vectData[j - 1] < 0 && vectData[j] >= 0) || (vectData[j - 1] >= 0 && vectData[j] < 0)) {
-          swapCount++;
-        }
-      }
-
-      MPI_Send(&swapCount, 1, MPI_INT, 0, 0, MPI_COMM_WORLD);
-    }
-  }
-
-  MPI_Barrier(MPI_COMM_WORLD);
-
-  if (ProcRank == 0) {
-    // отправляем всем процессам корректный результат
-    for (int i = 1; i < ProcessN; i++) {
-      MPI_Send(&allSwaps, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-    }
-    // сами устанавливаем значение
-    GetOutput() = allSwaps;
-  }
-  for (int i = 1; i < ProcessN; i++) {
-    if (ProcRank == i) {
-      int allSw;
-      MPI_Recv(&allSw, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-      GetOutput() = allSw;
-    }
-  }
-  MPI_Barrier(MPI_COMM_WORLD);
-  return true;
-} 
-```
-

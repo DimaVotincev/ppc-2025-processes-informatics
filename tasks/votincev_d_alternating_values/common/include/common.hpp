@@ -8,8 +8,8 @@
 namespace votincev_d_alternating_values {
 
 using InType = std::vector<double>;
-using OutType = int;           // убрать комментарии везде
-using TestType = std::string;  // ну уж точно не std::vector<double>
+using OutType = int;
+using TestType = std::string;
 using BaseTask = ppc::task::Task<InType, OutType>;
 
 }  // namespace votincev_d_alternating_values

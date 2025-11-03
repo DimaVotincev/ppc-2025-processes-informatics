@@ -51,8 +51,6 @@ TEST_P(VotincevDAlternatigValuesRunFuncTestsProcesses, CountSwapsFromGenerator) 
   ExecuteTest(GetParam());
 }
 
-// тестов всего k, но на самом деле 2k, на MPI и на SEQ,
-// так что не удивляемся, когда видим их в 2 раза больше
 const std::array<TestType, 1> kTestParam = {"myDefaultTest"};
 
 const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<VotincevDAlternatingValuesMPI, InType>(
