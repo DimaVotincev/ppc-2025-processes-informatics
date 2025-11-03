@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 #include <stb/stb_image.h>
 
+#include <array>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "util/include/func_test_util.hpp"
-#include "util/include/util.hpp"
 #include "votincev_d_alternating_values/common/include/common.hpp"
 #include "votincev_d_alternating_values/mpi/include/ops_mpi.hpp"
 #include "votincev_d_alternating_values/seq/include/ops_seq.hpp"

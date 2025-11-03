@@ -97,7 +97,7 @@ void VotincevDAlternatingValuesMPI::SendRangeToWorker(int start, int end, int wo
 
 // рабочие процессы получают данные
 std::array<int, 2> VotincevDAlternatingValuesMPI::ReceiveRange() {
-  std::array<int, 2> indices;
+  std::array<int, 2> indices{0, 0};
   MPI_Recv(indices.data(), 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   return {indices[0], indices[1]};
 }

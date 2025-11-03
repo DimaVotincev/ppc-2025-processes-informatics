@@ -25,11 +25,11 @@ class VotincevDAlternatingValuesMPI : public BaseTask {
 
   int ProcessMaster(int process_n);
   void ProcessWorker();
-  void SendRangeToWorker(int start, int end, int worker);
-  std::array<int, 2> ReceiveRange();
+  static void SendRangeToWorker(int start, int end, int worker);
+  static std::array<int, 2> ReceiveRange();
   int CountSwaps(int start, int end);
-  int CollectWorkerResults(int process_n);
-  void SendResult(int result);
+  static int CollectWorkerResults(int process_n);
+  static void SendResult(int result);
   void SyncResults(int &all_swaps);
 };
 
