@@ -1,9 +1,8 @@
 #include "votincev_d_alternating_values/seq/include/ops_seq.hpp"
 
-#include <numeric>
+#include <cstddef>  // для size_t
 #include <vector>
 
-#include "util/include/util.hpp"
 #include "votincev_d_alternating_values/common/include/common.hpp"
 
 namespace votincev_d_alternating_values {

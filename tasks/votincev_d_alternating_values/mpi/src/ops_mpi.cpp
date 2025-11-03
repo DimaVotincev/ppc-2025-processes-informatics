@@ -92,13 +92,13 @@ void VotincevDAlternatingValuesMPI::ProcessWorker() {
 // отправка части вектора на обработку рабочему процессу
 void VotincevDAlternatingValuesMPI::SendRangeToWorker(int start, int end, int worker) {
   std::array<int, 2> indices{start, end};
-  MPI_Send(&indices[0], 2, MPI_INT, worker, 0, MPI_COMM_WORLD);
+  MPI_Send(indices.data(), 2, MPI_INT, worker, 0, MPI_COMM_WORLD);
 }
 
 // рабочие процессы получают данные
 std::array<int, 2> VotincevDAlternatingValuesMPI::ReceiveRange() {
   std::array<int, 2> indices;
-  MPI_Recv(&indices[0], 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+  MPI_Recv(indices.data(), 2, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
   return {indices[0], indices[1]};
 }
 

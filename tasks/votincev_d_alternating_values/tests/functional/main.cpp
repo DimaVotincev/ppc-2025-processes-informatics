@@ -1,15 +1,8 @@
 #include <gtest/gtest.h>
 #include <stb/stb_image.h>
 
-#include <algorithm>
-#include <array>
-#include <cstddef>
-#include <cstdint>
-#include <numeric>
-#include <stdexcept>
 #include <string>
 #include <tuple>
-#include <utility>
 #include <vector>
 
 #include "util/include/func_test_util.hpp"
@@ -29,18 +22,18 @@ class VotincevDAlternatigValuesRunFuncTestsProcesses : public ppc::util::BaseRun
  protected:
   // считываем/генерируем данные
   void SetUp() override {
-    int vect_size = expected_res + 1;  // чтобы чередований было ровно expected_res
-    std::vector<double> vect_data_;
+    int vect_size = expected_res_ + 1;  // чтобы чередований было ровно expected_res_
+    std::vector<double> vect_data;
     int swapper = 1;
     for (int i = 0; i < vect_size; i++) {
-      vect_data_.push_back(i * swapper);  // 0 -1 2 -3 4 ...
+      vect_data.push_back(i * swapper);  // 0 -1 2 -3 4 ...
       swapper *= -1;
     }
-    input_data_ = vect_data_;
+    input_data_ = vect_data;
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data == expected_res;
+    return output_data == expected_res_;
   }
 
   InType GetTestInputData() final {
@@ -49,7 +42,7 @@ class VotincevDAlternatigValuesRunFuncTestsProcesses : public ppc::util::BaseRun
 
  private:
   InType input_data_;
-  OutType expected_res = 10;
+  OutType expected_res_ = 10;
 };
 
 namespace {

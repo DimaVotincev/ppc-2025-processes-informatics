@@ -10,24 +10,24 @@
 namespace votincev_d_alternating_values {
 
 class VotincevDAlternatigValuesRunPerfTestsProcesses : public ppc::util::BaseRunPerfTests<InType, OutType> {
-  InType input_data_{};
+  InType input_data_;
   const int kCount_ = 10000000 + 1;
-  OutType expected_res = 10000000;
+  OutType expected_res_ = 10000000;
 
   void SetUp() override {
     int vect_size = kCount_;
-    std::vector<double> vect_data_;
+    std::vector<double> vect_data;
     int swapper = 1;
     for (int i = 0; i < vect_size; i++) {
-      vect_data_.push_back(i * swapper);  // 0 -1 2 -3 4 -5...
+      vect_data.push_back(i * swapper);  // 0 -1 2 -3 4 -5...
       swapper *= -1;
     }
 
-    input_data_ = vect_data_;
+    input_data_ = vect_data;
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
-    return output_data == expected_res;
+    return output_data == expected_res_;
   }
 
   InType GetTestInputData() final {
