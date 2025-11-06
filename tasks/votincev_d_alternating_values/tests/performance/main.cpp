@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <cstddef>  // для size_t
 #include <vector>
 
 #include "util/include/perf_test_util.hpp"
