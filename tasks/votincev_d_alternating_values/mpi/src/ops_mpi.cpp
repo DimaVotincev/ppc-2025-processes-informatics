@@ -18,7 +18,7 @@ VotincevDAlternatingValuesMPI::VotincevDAlternatingValuesMPI(const InType &in) {
 
 // проверка данных на адекватность
 bool VotincevDAlternatingValuesMPI::ValidationImpl() {
-  return !(GetInput().empty());
+  return true;
 }
 
 // препроцессинг (например в КГ)
@@ -30,6 +30,9 @@ bool VotincevDAlternatingValuesMPI::PreProcessingImpl() {
 
 // код MPI
 bool VotincevDAlternatingValuesMPI::RunImpl() {
+  // double start_time = 0, end_time = 0;
+  // start_time = MPI_Wtime();
+
   int all_swaps = 0;
 
   int process_n = 0;
@@ -42,11 +45,17 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
   const int vector_size = static_cast<int>(vect_data_.size());
   process_n = std::min(vector_size, process_n);
 
-  if (proc_rank == 0) {
+  if (proc_rank == 0 && process_n > 0) {
     all_swaps = ProcessMaster(process_n);  // главный процесс (распределяет + считает часть)
-  } else {
+  } else if (proc_rank < process_n) {
     ProcessWorker();  // процессы-рабочие (только считают)
   }
+  MPI_Barrier(MPI_COMM_WORLD);
+
+  // end_time = MPI_Wtime();
+  // if(proc_rank == 0) {
+  //   std::cout << "MPI was working: " << end_time-start_time << "\n";
+  // }
 
   SyncResults(all_swaps);  // посылаю результат всем процессам
   return true;
