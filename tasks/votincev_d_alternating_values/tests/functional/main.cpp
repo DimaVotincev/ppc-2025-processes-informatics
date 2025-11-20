@@ -49,6 +49,12 @@ class VotincevDAlternatigValuesRunFuncTestsProcesses : public ppc::util::BaseRun
   }
 
   bool CheckTestOutputData(OutType &output_data) final {
+    // процессы (кроме 0-го) не сверяются с ответом
+    if (output_data == -1) {
+      return true;
+    }
+
+    // 0й процесс должен иметь правильный результат
     return output_data == expected_res_;
   }
 
@@ -67,7 +73,8 @@ TEST_P(VotincevDAlternatigValuesRunFuncTestsProcesses, CountSwapsFromGenerator) 
   ExecuteTest(GetParam());
 }
 
-const std::array<TestType, 6> kTestParam = {"test1", "test2", "test3", "test4", "test5", "test6"};
+const std::array<TestType, 10> kTestParam = {"test1", "test2", "test3", "test4", "test5",
+                                             "test6", "test7", "test8", "test9", "test10"};
 
 const auto kTestTasksList = std::tuple_cat(ppc::util::AddFuncTask<VotincevDAlternatingValuesMPI, InType>(
                                                kTestParam, PPC_SETTINGS_votincev_d_alternating_values),

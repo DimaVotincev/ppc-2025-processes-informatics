@@ -15,12 +15,14 @@ class VotincevDAlternatingValuesSEQ : public BaseTask {
   explicit VotincevDAlternatingValuesSEQ(const InType &in);
 
  private:
-  std::vector<double> vect_data_;
-
   bool ValidationImpl() override;
   bool PreProcessingImpl() override;
   bool RunImpl() override;
   bool PostProcessingImpl() override;
+
+  // == мои дополнительные функции ==
+  bool IsSignChange(const double &a, const double &b);
+  // ================================
 };
 
 }  // namespace votincev_d_alternating_values
