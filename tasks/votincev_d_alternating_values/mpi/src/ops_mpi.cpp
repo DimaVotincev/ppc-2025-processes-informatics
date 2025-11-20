@@ -3,7 +3,6 @@
 #include <mpi.h>
 
 #include <algorithm>
-#include <array>
 #include <vector>
 
 #include "votincev_d_alternating_values/common/include/common.hpp"
@@ -49,7 +48,7 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
 
     // если процессов больше, чем размер вектора — уменьшаем
     // например: вектор = 2 элемента, а процессов запущено 4
-    process_n = std::min<int>(process_n, vect_data.size());
+    process_n = std::min<int>(process_n, static_cast<int>(vect_data.size()));
   }
 
   // рассылаю всем "актуальное" число процессов
@@ -84,7 +83,7 @@ bool VotincevDAlternatingValuesMPI::IsSignChange(const double &a, const double &
 // работа 0-го процесса (главного)
 int VotincevDAlternatingValuesMPI::ProcessMaster(int process_n, const std::vector<double> &vect_data) {
   int all_swaps = 0;
-  const int n = vect_data.size();
+  const int n = static_cast<int>(vect_data.size());
 
   // делим на части
   const int base = n / process_n;  // минимум на обработку

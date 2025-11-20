@@ -1,6 +1,5 @@
 #pragma once
 
-#include <array>
 #include <vector>
 
 #include "task/include/task.hpp"
@@ -24,7 +23,7 @@ class VotincevDAlternatingValuesMPI : public BaseTask {
   // == мои дополнительные функции ==
   int ProcessMaster(int process_n, const std::vector<double> &vect_data);
   void ProcessWorker();
-  bool IsSignChange(const double &a, const double &b);
+  static bool IsSignChange(const double &a, const double &b);
   // ================================
 };
 

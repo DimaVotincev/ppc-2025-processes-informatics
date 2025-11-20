@@ -1,7 +1,5 @@
 #pragma once
 
-#include <vector>
-
 #include "task/include/task.hpp"
 #include "votincev_d_alternating_values/common/include/common.hpp"
 
@@ -21,7 +19,7 @@ class VotincevDAlternatingValuesSEQ : public BaseTask {
   bool PostProcessingImpl() override;
 
   // == мои дополнительные функции ==
-  bool IsSignChange(const double &a, const double &b);
+  static bool IsSignChange(const double &a, const double &b);
   // ================================
 };
 
