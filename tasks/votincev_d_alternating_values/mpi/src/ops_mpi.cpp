@@ -28,8 +28,6 @@ bool VotincevDAlternatingValuesMPI::PreProcessingImpl() {
 
 // код MPI
 bool VotincevDAlternatingValuesMPI::RunImpl() {
-  GetOutput() = -1;  // специальное значение
-
   // получаю кол-во процессов
   int process_n = 0;
   MPI_Comm_size(MPI_COMM_WORLD, &process_n);
@@ -40,6 +38,10 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
 
   // вектор значений (его заполняет только 0й процесс)
   std::vector<double> vect_data;
+
+  if (proc_rank != 0) {
+    GetOutput() = -1;  // специальное значение
+  }
 
   // 0й процесс получает данные
   if (proc_rank == 0) {
@@ -60,7 +62,7 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
   }
 
   if (proc_rank == 0) {
-    int all_swaps = ProcessMaster(process_n, vect_data);  // работа 0-го процесса
+    GetOutput() = ProcessMaster(process_n, vect_data);  // работа 0-го процесса
   } else if (proc_rank < process_n) {
     ProcessWorker();  // работа процессов-работников
   }
