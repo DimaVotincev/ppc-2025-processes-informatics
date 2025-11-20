@@ -21,8 +21,8 @@ class VotincevDAlternatingValuesMPI : public BaseTask {
   bool PostProcessingImpl() override;
 
   // == мои дополнительные функции ==
-  int ProcessMaster(int process_n, const std::vector<double> &vect_data);
-  void ProcessWorker();
+  static int ProcessMaster(int process_n, const std::vector<double> &vect_data);
+  static void ProcessWorker();
   static bool IsSignChange(const double &a, const double &b);
   // ================================
 };
