@@ -59,9 +59,8 @@ bool VotincevDAlternatingValuesMPI::RunImpl() {
     return true;
   }
 
-  int all_swaps = 0;
   if (proc_rank == 0) {
-    all_swaps = ProcessMaster(process_n, vect_data);  // работа 0-го процесса
+    int all_swaps = ProcessMaster(process_n, vect_data);  // работа 0-го процесса
   } else if (proc_rank < process_n) {
     ProcessWorker();  // работа процессов-работников
   }
