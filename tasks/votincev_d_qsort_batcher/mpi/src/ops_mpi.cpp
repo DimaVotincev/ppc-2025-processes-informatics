@@ -119,26 +119,32 @@ int VotincevDQsortBatcherMPI::GetPartnerRank(int rank, int proc_n, int phase) {
   // Классическая схема Odd-Even Transposition (Batcher-like для P процессов)
   if (phase % 2 == 0) {
     // Чётная фаза: (0,1), (2,3), (4,5)...
-    if (rank % 2 == 0) partner = rank + 1;
-    else partner = rank - 1;
+    if (rank % 2 == 0) {
+      partner = rank + 1;
+    } else {
+      partner = rank - 1;
+    }
   } else {
     // Нечётная фаза: (1,2), (3,4), (5,6)...
-    if (rank % 2 == 1) partner = rank + 1;
-    else partner = rank - 1;
+    if (rank % 2 == 1) {
+      partner = rank + 1;
+    } else {
+      partner = rank - 1;
+    }
   }
 
-  if (partner < 0 || partner >= proc_n) return -1;
+  if (partner < 0 || partner >= proc_n) {
+    return -1;
+  }
   return partner;
 }
 
 void VotincevDQsortBatcherMPI::PerformMergePhase(int rank, int partner, const std::vector<int> &sizes,
                                                  std::vector<double> &local, std::vector<double> &recv_buf,
                                                  std::vector<double> &merge_buf) {
-  MPI_Sendrecv(local.data(), sizes[rank], MPI_DOUBLE, partner, 0, 
-               recv_buf.data(), sizes[partner], MPI_DOUBLE, partner,
+  MPI_Sendrecv(local.data(), sizes[rank], MPI_DOUBLE, partner, 0, recv_buf.data(), sizes[partner], MPI_DOUBLE, partner,
                0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
 
-  
   std::merge(local.begin(), local.end(), recv_buf.begin(), recv_buf.begin() + sizes[partner], merge_buf.begin());
 
   // малые влево, большие вправо
@@ -153,7 +159,9 @@ void VotincevDQsortBatcherMPI::PerformMergePhase(int rank, int partner, const st
 
 void VotincevDQsortBatcherMPI::BatcherMergeSort(int rank, int proc_n, const std::vector<int> &sizes,
                                                 std::vector<double> &local) {
-  if (proc_n <= 1) return;
+  if (proc_n <= 1) {
+    return;
+  }
 
   int max_block = *std::ranges::max_element(sizes);
   std::vector<double> recv_buf(max_block);
